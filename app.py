@@ -5,232 +5,226 @@ import pytz
 import requests
 
 import streamlit as st
-# st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")
 import numpy as np
 import pandas as pd
-# import plotly.express as pltx
-# import plotly.graph_objects as go
-# from plotly.subplots import make_subplots
-
-api_key = st.text_input('API Key')
-
-if api_key:
-    params = {'api_key': api_key, 'symbols': 'SOLUSDT_PERP.A', 'interval': 'daily', 'to': '1707004800', 'from': '1704412800'}
-    params
-
-    rsp = requests.get("https://api.coinalyze.net/v1/ohlcv-history", params=params)
-    rsp
+import plotly.express as pltx
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
-# time_zone = pytz.timezone('UTC')
+time_zone = pytz.timezone('UTC')
 
 
-# @st.cache_data
-# def get_market(base, start_time: datetime2, end_time: datetime2, api_len: str):
-#     ohlcv_url = "https://api.coinalyze.net/v1/ohlcv-history"
-#     if isinstance(base, str):
-#         base = [base]
+@st.cache_data(ttl=3600)
+def get_market(base, start_time: datetime2, end_time: datetime2, api_len: str, api_key: str):
+    ohlcv_url = "https://api.coinalyze.net/v1/ohlcv-history"
+    if isinstance(base, str):
+        base = [base]
 
-#     params = dict(
-#         symbols=",".join([f"{b}USDT_PERP.A" for b in base]),
-#         interval=api_len,
-#         to=str(int(end_time.timestamp())),
-#     )
-#     params["from"] = str(int(start_time.timestamp()))
-#     print(params)
+    params = dict(
+        api_key=api_key,
+        symbols=",".join([f"{b}USDT_PERP.A" for b in base]),
+        interval=api_len,
+        to=str(int(end_time.timestamp())),
+    )
+    params["from"] = str(int(start_time.timestamp()))
+    print(params)
 
-#     rsp = requests.get(ohlcv_url, params=params)
+    rsp = requests.get(ohlcv_url, params=params)
 
-#     rsp_json = rsp.json()
-#     df_data = []
+    rsp_json = rsp.json()
+    df_data = []
 
-#     if not rsp_json or "message" in rsp_json:
-#         print(params)
-#         print(rsp)
-#         st.error(rsp_json)
-#         st.stop()
+    if not rsp_json or "message" in rsp_json:
+        print(params)
+        print(rsp)
+        st.error(rsp_json)
+        st.stop()
 
-#     for symbol_data in rsp_json:
-#         sym = symbol_data["symbol"]
-#         candles = symbol_data["history"]
-#         df = pd.DataFrame(candles)
-#         df["sym"] = sym
-#         df_data.append(df)
+    for symbol_data in rsp_json:
+        sym = symbol_data["symbol"]
+        candles = symbol_data["history"]
+        df = pd.DataFrame(candles)
+        df["sym"] = sym
+        df_data.append(df)
 
-#     df = pd.concat(df_data, ignore_index=True)
-#     df["t"] = pd.to_datetime(df["t"], utc=True, unit="s")
-#     return df
-
-
-# base = st.text_input('Base Currency', value='SOL')
-# params = dict(base=base)
-# precomputed = st.checkbox("Demo Dataset", value=True)
-# dataset = st.selectbox('Dataset', options=["2023-01-01_2023-12-31"], disabled=not precomputed)
-
-# cols = st.columns(2)
-# now_time = datetime2.now(tz=time_zone)
-# start_time = now_time - datetime.timedelta(days=30)
-
-# start_date = cols[0].date_input(
-#     "Start Date", value=start_time.date()
-# )
-# end_date = cols[1].date_input(
-#     "End Date", value=now_time.date()
-# )
-
-# start_time = time_zone.localize(datetime2.combine(start_date, datetime.time()))
-# end_time = time_zone.localize(datetime2.combine(end_date, datetime.time()))
-
-# cols = st.columns(6)
-# capital = cols[0].number_input("Capital", min_value=0, step=50_000, value=100_000, disabled=precomputed)
-# vol_target = cols[1].number_input("Vol Target", min_value=0.0, step=0.1, value=0.45, disabled=precomputed)
-# simulations = (1, 2, 4, 8, 16, 32, 64)
-# display_forecast = cols[2].selectbox("Display Forecast", options=simulations, index=simulations.index(4))
-# forecast_cap = cols[3].number_input("Forecast Cap", min_value=0, value=2, disabled=precomputed)
-# fee_bps = cols[4].number_input("Fee (bps)", min_value=0.0, step=0.5, value=2.0, disabled=precomputed)
-# candle_len = cols[5].selectbox("Candle Length", ["1d", "1h"])
-
-# if candle_len == "1d":
-#     api_len = "daily"
-# else:
-#     api_len = "1hour"
-
-# with st.expander('Advanced'):
-#     debug = st.checkbox("Debug")
-#     if debug:
-#         precomputed_data_dir = f"/Users/xiaoyidou/notebooks/data/carver"
-#     else:
-#         precomputed_data_dir = f"/home/jumpfrog/notebooks/data/carver"
-
-# def calc_vol(df: pd.DataFrame):
-#     df["fast_vol"] = df["log_diffs"].ewm(span=32).std() * 16
-#     if df["t"].max() - df["t"].min() >= datetime.timedelta(days=32 * 3 * 2):
-#         df["slow_vol"] = df.rolling(32 * 3)["fast_vol"].mean()
-#     else:
-#         df["slow_vol"] = df["fast_vol"].mean()
-#     df["vol"] = 0.7 * df["fast_vol"] + 0.3 * df["slow_vol"]
+    df = pd.concat(df_data, ignore_index=True)
+    df["t"] = pd.to_datetime(df["t"], utc=True, unit="s")
+    return df
 
 
-# if not precomputed:
-#     df = get_market(base, start_time, end_time, api_len)
-#     df["log_prices"] = np.log(df["c"])
-#     df["log_diffs"] = df["log_prices"] - df["log_prices"].shift(1)
+base = st.text_input('Base Currency', value='SOL')
+params = dict(base=base)
+precomputed = st.checkbox("Demo Dataset", value=True)
+cols = st.columns(2)
+dataset = cols[0].selectbox('Dataset', options=["2023-01-01_2023-12-31"], disabled=not precomputed)
+api_key = cols[1].text_input('API Key', disabled=precomputed)
 
-#     if candle_len == "1h":
-#         vol_df = get_market(base, start_time, end_time, "daily")
-#         vol_df["log_prices"] = np.log(vol_df["c"])
-#         vol_df["log_diffs"] = vol_df["log_prices"] - vol_df["log_prices"].shift(1)
-#     else:
-#         vol_df = df
+cols = st.columns(2)
+now_time = datetime2.now(tz=time_zone)
+start_time = now_time - datetime.timedelta(days=30)
 
-#     calc_vol(vol_df)
+start_date = cols[0].date_input(
+    "Start Date", value=start_time.date()
+)
+end_date = cols[1].date_input(
+    "End Date", value=now_time.date()
+)
 
-#     if candle_len == "1h":
-#         df = df.merge(vol_df[["sym", "t", "vol"]], how="left")
-#         df["vol"] = df["vol"].ffill()
+start_time = time_zone.localize(datetime2.combine(start_date, datetime.time()))
+end_time = time_zone.localize(datetime2.combine(end_date, datetime.time()))
 
-#     cache = {}
-#     reference = df.dropna()
+cols = st.columns(6)
+capital = cols[0].number_input("Capital", min_value=0, step=50_000, value=100_000, disabled=precomputed)
+vol_target = cols[1].number_input("Vol Target", min_value=0.0, step=0.1, value=0.45, disabled=precomputed)
+simulations = (1, 2, 4, 8, 16, 32, 64)
+display_forecast = cols[2].selectbox("Display Forecast", options=simulations, index=simulations.index(4))
+forecast_cap = cols[3].number_input("Forecast Cap", min_value=0, value=2, disabled=precomputed)
+fee_bps = cols[4].number_input("Fee (bps)", min_value=0.0, step=0.5, value=2.0, disabled=precomputed)
+candle_len = cols[5].selectbox("Candle Length", ["1d", "1h"])
 
-#     for ma in simulations:
-#         df = reference.copy()
-#         df["slow_ema"] = df["c"].ewm(span=ma * 4).mean()
-#         df["fast_ema"] = df["c"].ewm(span=ma).mean()
+if candle_len == "1d":
+    api_len = "daily"
+else:
+    api_len = "1hour"
 
-#         # want avg absolute value of forecast to correspond with vol target
-#         df["forecast"] = (df["fast_ema"] - df["slow_ema"]) / (df["vol"] / 16 * df["c"])
-#         df["unsigned_forecast"] = df["forecast"].abs()
-#         df["forecast"] = df["forecast"] / df["unsigned_forecast"].mean()
-#         df["forecast"] = np.clip(df["forecast"], -forecast_cap, forecast_cap)
-#         df["target"] = df["forecast"] * capital * vol_target / (df["vol"])
-#         df["pnl"] = df["target"].shift(1) * df["log_diffs"]
-#         df["cum_pnl"] = df["pnl"].cumsum()
-#         df["cum_volume"] = (df["target"] - df["target"].shift(1)).abs().cumsum()
-#         df["cum_fees"] = df["cum_volume"] * fee_bps * 1e-4
-#         cache[ma] = df
-# else:
-#     results_csv = f"{precomputed_data_dir}/{dataset}_{base}_{candle_len}_results.csv.gz"
-#     df = pd.read_csv(results_csv)
+with st.expander('Advanced'):
+    debug = st.checkbox("Debug")
+    if debug:
+        precomputed_data_dir = f"/Users/xiaoyidou/notebooks/data/carver"
+    else:
+        precomputed_data_dir = f"./demo-data"
 
-#     cache = {}
-#     reference = df[df["simulation"] == display_forecast]
-#     for ma in simulations:
-#         cache[ma] = df[df["simulation"] == ma]
-
-# fig = make_subplots(rows=5, cols=1, specs=[[{}], [{}], [{"secondary_y": True}], [{}], [{}]])
-
-# fig.add_trace(
-#     go.Candlestick(
-#         x=reference["t"],
-#         open=reference["o"],
-#         high=reference["h"],
-#         low=reference["l"],
-#         close=reference["c"],
-#         name="price",
-#     )
-# )
-
-# for ma in simulations:
-#     df = cache[ma]
-#     fig.add_trace(go.Scatter(x=df["t"], y=df["fast_ema"], name=f"ema{ma}"))
-
-# fig.add_trace(
-#     go.Scatter(x=reference["t"], y=reference["vol"], name="annualized vol"), row=2, col=1,
-# )
-
-# df = cache[display_forecast]
-# fig.add_trace(
-#     go.Scatter(x=df["t"], y=df["forecast"], name=f"forecast{display_forecast}"), row=3, col=1,
-# )
-# fig.add_trace(
-#     go.Scatter(x=df["t"], y=df["target"], name=f"target{display_forecast}"), row=3, col=1, secondary_y=True,
-# )
-
-# for ma in simulations:
-#     df = cache[ma]
-#     fig.add_trace(go.Scatter(x=df["t"], y=df["cum_pnl"], name=f"pnl{ma}"), row=4, col=1)
-
-# for ma in simulations:
-#     df = cache[ma]
-#     fig.add_trace(go.Scatter(x=df["t"], y=df["cum_fees"], name=f"fees{ma}"), row=5, col=1)
-
-# fig.update_layout(xaxis_rangeslider_visible=False, height=5 * 400)
-# st.plotly_chart(fig, use_container_width=True)
+def calc_vol(df: pd.DataFrame):
+    df["fast_vol"] = df["log_diffs"].ewm(span=32).std() * 16
+    if df["t"].max() - df["t"].min() >= datetime.timedelta(days=32 * 3 * 2):
+        df["slow_vol"] = df.rolling(32 * 3)["fast_vol"].mean()
+    else:
+        df["slow_vol"] = df["fast_vol"].mean()
+    df["vol"] = 0.7 * df["fast_vol"] + 0.3 * df["slow_vol"]
 
 
-# def read_precomputed(data_dir: str, dataset: str, candle_len: str):
-#     df_data = []
-#     for fpath in glob.glob(f"{data_dir}/{dataset}_*_{candle_len}_results.csv.gz"):
-#         df = pd.read_csv(fpath)
-#         df_data.append(df)
+if not precomputed:
+    df = get_market(base, start_time, end_time, api_len, api_key)
+    df["log_prices"] = np.log(df["c"])
+    df["log_diffs"] = df["log_prices"] - df["log_prices"].shift(1)
 
-#     df = pd.concat(df_data, ignore_index=True)
-#     df = df.sort_values(["simulation", "sym", "t"])
-#     return df
+    if candle_len == "1h":
+        vol_df = get_market(base, start_time, end_time, "daily")
+        vol_df["log_prices"] = np.log(vol_df["c"])
+        vol_df["log_diffs"] = vol_df["log_prices"] - vol_df["log_prices"].shift(1)
+    else:
+        vol_df = df
+
+    calc_vol(vol_df)
+
+    if candle_len == "1h":
+        df = df.merge(vol_df[["sym", "t", "vol"]], how="left")
+        df["vol"] = df["vol"].ffill()
+
+    cache = {}
+    reference = df.dropna()
+
+    for ma in simulations:
+        df = reference.copy()
+        df["slow_ema"] = df["c"].ewm(span=ma * 4).mean()
+        df["fast_ema"] = df["c"].ewm(span=ma).mean()
+
+        # want avg absolute value of forecast to correspond with vol target
+        df["forecast"] = (df["fast_ema"] - df["slow_ema"]) / (df["vol"] / 16 * df["c"])
+        df["unsigned_forecast"] = df["forecast"].abs()
+        df["forecast"] = df["forecast"] / df["unsigned_forecast"].mean()
+        df["forecast"] = np.clip(df["forecast"], -forecast_cap, forecast_cap)
+        df["target"] = df["forecast"] * capital * vol_target / (df["vol"])
+        df["pnl"] = df["target"].shift(1) * df["log_diffs"]
+        df["cum_pnl"] = df["pnl"].cumsum()
+        df["cum_volume"] = (df["target"] - df["target"].shift(1)).abs().cumsum()
+        df["cum_fees"] = df["cum_volume"] * fee_bps * 1e-4
+        cache[ma] = df
+else:
+    results_csv = f"{precomputed_data_dir}/{dataset}_{base}_{candle_len}_results.csv.gz"
+    df = pd.read_csv(results_csv)
+
+    cache = {}
+    reference = df[df["simulation"] == display_forecast]
+    for ma in simulations:
+        cache[ma] = df[df["simulation"] == ma]
+
+fig = make_subplots(rows=5, cols=1, specs=[[{}], [{}], [{"secondary_y": True}], [{}], [{}]])
+
+fig.add_trace(
+    go.Candlestick(
+        x=reference["t"],
+        open=reference["o"],
+        high=reference["h"],
+        low=reference["l"],
+        close=reference["c"],
+        name="price",
+    )
+)
+
+for ma in simulations:
+    df = cache[ma]
+    fig.add_trace(go.Scatter(x=df["t"], y=df["fast_ema"], name=f"ema{ma}"))
+
+fig.add_trace(
+    go.Scatter(x=reference["t"], y=reference["vol"], name="annualized vol"), row=2, col=1,
+)
+
+df = cache[display_forecast]
+fig.add_trace(
+    go.Scatter(x=df["t"], y=df["forecast"], name=f"forecast{display_forecast}"), row=3, col=1,
+)
+fig.add_trace(
+    go.Scatter(x=df["t"], y=df["target"], name=f"target{display_forecast}"), row=3, col=1, secondary_y=True,
+)
+
+for ma in simulations:
+    df = cache[ma]
+    fig.add_trace(go.Scatter(x=df["t"], y=df["cum_pnl"], name=f"pnl{ma}"), row=4, col=1)
+
+for ma in simulations:
+    df = cache[ma]
+    fig.add_trace(go.Scatter(x=df["t"], y=df["cum_fees"], name=f"fees{ma}"), row=5, col=1)
+
+fig.update_layout(xaxis_rangeslider_visible=False, height=5 * 400)
+st.plotly_chart(fig, use_container_width=True)
 
 
-# aggregate = st.checkbox("Aggregate")
-# if aggregate:
-#     st.divider()
-#     df = read_precomputed(precomputed_data_dir, dataset, candle_len)
-#     symbols = sorted(df["sym"].unique())
-#     default_exclude = [x for x in ["COCOSUSDT_PERP.A", "FTTUSDT_PERP.A"] if x in symbols]
-#     exclude = st.multiselect("Exclude", options=symbols, default=default_exclude)
-#     if exclude:
-#         df = df[~df["sym"].isin(exclude)]
-#     ds = df
-#     st.plotly_chart(
-#         pltx.line(ds, x="t", y="cum_pnl", color="sym", facet_col="simulation", facet_col_wrap=4,),
-#         use_container_width=True,
-#     )
+def read_precomputed(data_dir: str, dataset: str, candle_len: str):
+    df_data = []
+    for fpath in glob.glob(f"{data_dir}/{dataset}_*_{candle_len}_results.csv.gz"):
+        df = pd.read_csv(fpath)
+        df_data.append(df)
 
-#     aggr = df.groupby(["simulation", "t"]).agg(dict(cum_pnl="sum", cum_fees="sum")).reset_index()
-#     aggr["cum_pnl_net"] = aggr["cum_pnl"] - aggr["cum_fees"]
-#     st.plotly_chart(
-#         pltx.line(aggr, x="t", y=["cum_pnl", "cum_fees", "cum_pnl_net"], facet_col="simulation", facet_col_wrap=4),
-#         use_container_width=True,
-#     )
+    df = pd.concat(df_data, ignore_index=True)
+    df = df.sort_values(["simulation", "sym", "t"])
+    return df
 
-#     df = df[df["simulation"] == display_forecast]
-#     df = df.groupby("sym").last().sort_values("cum_pnl").reset_index()
-#     st.plotly_chart(pltx.bar(df, x="sym", y="cum_pnl"), use_container_width=True)
+
+aggregate = st.checkbox("Aggregate")
+if aggregate:
+    st.divider()
+    df = read_precomputed(precomputed_data_dir, dataset, candle_len)
+    symbols = sorted(df["sym"].unique())
+    default_exclude = [x for x in ["COCOSUSDT_PERP.A", "FTTUSDT_PERP.A"] if x in symbols]
+    exclude = st.multiselect("Exclude", options=symbols, default=default_exclude)
+    if exclude:
+        df = df[~df["sym"].isin(exclude)]
+    ds = df
+    st.plotly_chart(
+        pltx.line(ds, x="t", y="cum_pnl", color="sym", facet_col="simulation", facet_col_wrap=4,),
+        use_container_width=True,
+    )
+
+    aggr = df.groupby(["simulation", "t"]).agg(dict(cum_pnl="sum", cum_fees="sum")).reset_index()
+    aggr["cum_pnl_net"] = aggr["cum_pnl"] - aggr["cum_fees"]
+    st.plotly_chart(
+        pltx.line(aggr, x="t", y=["cum_pnl", "cum_fees", "cum_pnl_net"], facet_col="simulation", facet_col_wrap=4),
+        use_container_width=True,
+    )
+
+    df = df[df["simulation"] == display_forecast]
+    df = df.groupby("sym").last().sort_values("cum_pnl").reset_index()
+    st.plotly_chart(pltx.bar(df, x="sym", y="cum_pnl"), use_container_width=True)
