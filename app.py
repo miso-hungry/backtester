@@ -266,9 +266,9 @@ if aggregate:
     )
 
     aggr = df.groupby(["simulation", "t"]).agg(dict(cum_pnl="sum", cum_fees="sum")).reset_index()
-    aggr["cum_pnl_net"] = aggr["cum_pnl"] - aggr["cum_fees"]
+    # aggr["cum_pnl_net"] = aggr["cum_pnl"] - aggr["cum_fees"]
     st.plotly_chart(
-        pltx.line(aggr, x="t", y=["cum_pnl", "cum_fees", "cum_pnl_net"], facet_col="simulation", facet_col_wrap=4),
+        pltx.line(aggr, x="t", y=["cum_pnl", "cum_fees"], facet_col="simulation", facet_col_wrap=4),
         use_container_width=True,
     )
 
