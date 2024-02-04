@@ -66,10 +66,10 @@ now_time = datetime2.now(tz=time_zone)
 start_time = now_time - datetime.timedelta(days=30)
 
 start_date = cols[0].date_input(
-    "Start Date", value=start_time.date()
+    "Start Date", value=start_time.date(), disabled=precomputed
 )
 end_date = cols[1].date_input(
-    "End Date", value=now_time.date()
+    "End Date", value=now_time.date(), disabled=precomputed
 )
 
 start_time = time_zone.localize(datetime2.combine(start_date, datetime.time()))
@@ -92,7 +92,7 @@ else:
 with st.expander('Advanced'):
     debug = st.checkbox("Debug")
     if debug:
-        precomputed_data_dir = f"/Users/xiaoyidou/notebooks/data/carver"
+        precomputed_data_dir = f"/Users/xiaoyidou/backtester/demo_data"
     else:
         precomputed_data_dir = f"demo_data"
 
