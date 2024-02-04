@@ -63,7 +63,8 @@ base = st.selectbox('Base Currency', options=all_bases, index=all_bases.index('S
 params = dict(base=base)
 precomputed = st.checkbox("Demo Dataset", value=True)
 cols = st.columns(2)
-dataset = cols[0].selectbox('Dataset', options=["2023-01-01_2023-12-31"], disabled=not precomputed)
+avail_datasets = ["2023-01-01_2023-12-31", "2022-01-01_2022-12-31"]
+dataset = cols[0].selectbox('Dataset', options=avail_datasets, disabled=not precomputed)
 api_key = cols[1].text_input('API Key', disabled=precomputed)
 
 cols = st.columns(2)
@@ -254,11 +255,11 @@ aggregate = st.checkbox("Aggregate", disabled=not precomputed)
 if aggregate:
     st.divider()
     df = read_precomputed(precomputed_data_dir, dataset, candle_len)
-    symbols = sorted(df["sym"].unique())
-    default_exclude = [x for x in ["COCOSUSDT_PERP.A", "FTTUSDT_PERP.A"] if x in symbols]
-    exclude = st.multiselect("Exclude Visual", options=symbols, default=default_exclude)
-    if exclude:
-        df = df[~df["sym"].isin(exclude)]
+    # symbols = sorted(df["sym"].unique())
+    # default_exclude = [x for x in ["COCOSUSDT_PERP.A", "FTTUSDT_PERP.A"] if x in symbols]
+    # exclude = st.multiselect("Exclude Visual", options=symbols, default=default_exclude)
+    # if exclude:
+    #     df = df[~df["sym"].isin(exclude)]
     ds = df
     st.plotly_chart(
         pltx.line(ds, x="t", y="cum_pnl", color="sym", facet_col="simulation", facet_col_wrap=4,),
