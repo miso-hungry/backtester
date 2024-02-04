@@ -203,7 +203,7 @@ def read_precomputed(data_dir: str, dataset: str, candle_len: str):
     return df
 
 
-aggregate = st.checkbox("Aggregate")
+aggregate = st.checkbox("Aggregate", disabled=not precomputed)
 if aggregate:
     st.divider()
     df = read_precomputed(precomputed_data_dir, dataset, candle_len)
