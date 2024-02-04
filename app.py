@@ -1,6 +1,8 @@
 import datetime
 from datetime import datetime as datetime2
 import glob
+import json
+import math
 import pytz
 import requests
 
@@ -66,7 +68,7 @@ api_key = cols[1].text_input('API Key', disabled=precomputed)
 
 cols = st.columns(2)
 now_time = datetime2.now(tz=time_zone)
-start_time = now_time - datetime.timedelta(days=30)
+start_time = now_time - datetime.timedelta(days=30 * 3)
 
 start_date = cols[0].date_input(
     "Start Date", value=start_time.date(), disabled=precomputed
@@ -89,8 +91,10 @@ candle_len = cols[5].selectbox("Candle Length", ["1d", "1h"])
 
 if candle_len == "1d":
     api_len = "daily"
+    annualize_factor = math.sqrt(365)
 else:
     api_len = "1hour"
+    annualize_factor = math.sqrt(24 * 365)
 
 with st.expander('Advanced'):
     debug = st.checkbox("Debug")
@@ -107,8 +111,21 @@ def calc_vol(df: pd.DataFrame):
         df["slow_vol"] = df["fast_vol"].mean()
     df["vol"] = 0.7 * df["fast_vol"] + 0.3 * df["slow_vol"]
 
+def read_json(fpath: str):
+    with open(fpath) as f:
+        json_data = json.load(f)
+
+    rollups = pd.DataFrame(json_data['rollups'])
+    corrs = pd.DataFrame(json_data['corrs'])
+
+    return rollups, corrs
+
 
 if not precomputed:
+    if not api_key:
+        st.error(f'api key required')
+        st.stop()
+
     df = get_market(base, start_time, end_time, api_len, api_key)
     df["log_prices"] = np.log(df["c"])
     df["log_diffs"] = df["log_prices"] - df["log_prices"].shift(1)
@@ -128,6 +145,8 @@ if not precomputed:
 
     cache = {}
     reference = df.dropna()
+    return_corrs = []
+    rollups = []
 
     for ma in simulations:
         df = reference.copy()
@@ -145,6 +164,18 @@ if not precomputed:
         df["cum_volume"] = (df["target"] - df["target"].shift(1)).abs().cumsum()
         df["cum_fees"] = df["cum_volume"] * fee_bps * 1e-4
         cache[ma] = df
+
+        rollup = dict(
+            simulation=ma,
+            tot_return=df['return'].sum(),
+            sharpe=df['return'].mean() / df['return'].std() * annualize_factor,
+        )
+        rollups.append(rollup)
+        return_corrs.append(df['return'].reset_index(drop=True))
+
+    rollups = pd.DataFrame(rollups)
+    corrs = pd.concat(return_corrs, axis=1, keys=simulations)
+    corrs = corrs.corr()
 else:
     results_csv = f"{precomputed_data_dir}/{dataset}_{base}_{candle_len}_results.csv.gz"
     df = pd.read_csv(results_csv)
@@ -153,6 +184,9 @@ else:
     reference = df[df["simulation"] == display_forecast]
     for ma in simulations:
         cache[ma] = df[df["simulation"] == ma]
+
+    rollups_json = f'{precomputed_data_dir}/{dataset}_{base}_{candle_len}_rollups.json'
+    rollups, corrs = read_json(rollups_json)
 
 fig = make_subplots(rows=5, cols=1, specs=[[{}], [{}], [{"secondary_y": True}], [{}], [{}]])
 
@@ -195,6 +229,16 @@ fig.update_layout(xaxis_rangeslider_visible=False, height=5 * 400)
 st.plotly_chart(fig, use_container_width=True)
 
 
+def plot_rollups(rollups: pd.DataFrame, corrs: pd.DataFrame):
+    cols = st.columns(2)
+    cols[0].subheader('Summary')
+    cols[0].dataframe(rollups)
+    cols[1].subheader('Return Correlations')
+    cols[1].dataframe(corrs)
+
+plot_rollups(rollups, corrs)
+
+
 def read_precomputed(data_dir: str, dataset: str, candle_len: str):
     df_data = []
     for fpath in glob.glob(f"{data_dir}/{dataset}_*_{candle_len}_results.csv.gz"):
@@ -212,7 +256,7 @@ if aggregate:
     df = read_precomputed(precomputed_data_dir, dataset, candle_len)
     symbols = sorted(df["sym"].unique())
     default_exclude = [x for x in ["COCOSUSDT_PERP.A", "FTTUSDT_PERP.A"] if x in symbols]
-    exclude = st.multiselect("Exclude", options=symbols, default=default_exclude)
+    exclude = st.multiselect("Exclude Visual", options=symbols, default=default_exclude)
     if exclude:
         df = df[~df["sym"].isin(exclude)]
     ds = df
@@ -227,6 +271,10 @@ if aggregate:
         pltx.line(aggr, x="t", y=["cum_pnl", "cum_fees", "cum_pnl_net"], facet_col="simulation", facet_col_wrap=4),
         use_container_width=True,
     )
+
+    rollups_json = f'{precomputed_data_dir}/{dataset}_{candle_len}_rollups.json'
+    rollups, corrs = read_json(rollups_json)
+    plot_rollups(rollups, corrs)
 
     df = df[df["simulation"] == display_forecast]
     df = df.groupby("sym").last().sort_values("cum_pnl").reset_index()
