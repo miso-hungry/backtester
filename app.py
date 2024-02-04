@@ -94,7 +94,7 @@ with st.expander('Advanced'):
     if debug:
         precomputed_data_dir = f"/Users/xiaoyidou/notebooks/data/carver"
     else:
-        precomputed_data_dir = f"./demo-data"
+        precomputed_data_dir = f"demo-data"
 
 def calc_vol(df: pd.DataFrame):
     df["fast_vol"] = df["log_diffs"].ewm(span=32).std() * 16
