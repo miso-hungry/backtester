@@ -54,7 +54,10 @@ def get_market(base, start_time: datetime2, end_time: datetime2, api_len: str, a
     return df
 
 
-base = st.text_input('Base Currency', value='SOL')
+all_bases = sorted(
+    ['LOOM', 'DODO', 'ORBS', 'GALA', 'AGIX', 'ZRX', 'FIL', 'APT', 'APE', 'ARK', 'STORJ', 'TIA', 'FTM', 'STPT', 'SUSHI', 'WAXP', 'DOGE', 'XRP', 'NEO', 'KLAY', 'FRONT', 'IMX', 'LRC', 'SUI', 'C98', 'LINA', 'DOT', 'FLOKI', 'STMX', 'MINA', 'MOVR', 'LTC', 'UMA', 'MASK', 'STX', 'FTT', 'SSV', 'SAND', 'MATIC', 'ADA', 'UNI', 'GMX', 'OP', 'ETC', 'SATS', 'BTC', 'HIFI', 'BAND', 'AMB', 'AAVE', 'TRU', 'SOL', 'ORDI', 'BNB', 'BONK', 'WLD', 'RATS', 'IOST', 'LQTY', 'QTUM', 'ACE', 'GRT', 'COCOS', 'FLM', 'POWR', 'PERP', 'CFX', 'PEOPLE', 'UNFI', 'NMR', 'TRB', 'API3', 'BLZ', 'BNT', 'ENS', 'LINK', 'MANTA', 'LDO', 'ATOM', 'AR', 'VET', 'MANA', 'BCH', 'BAKE', 'WAVES', 'OCEAN', 'DUSK', 'ETH', 'CYBER', 'SXP', 'RUNE', 'CELR', 'BLUR', 'YGG', 'MAGIC', 'ICX', 'GMT', 'ARB', 'ID', 'INJ', 'AVAX', 'AXS', 'LUNA', 'NEAR', 'CHZ', 'RVN', 'ICP', 'SHIB', 'FET', 'SNX', 'BOND', 'CTSI', 'FLOW', 'ONT', 'LUNC', 'SEI', 'SKL', 'DYX', 'XLM', 'RNDR', 'STG', 'LPT', 'OGN', 'USTC', 'EOS', 'LEVER', 'MEME', 'YFI', 'CRV', 'COMP', 'GAS', 'PEPE', 'BIGT', 'XAI', 'BSV', 'JTO']
+)
+base = st.selectbox('Base Currency', options=all_bases, index=all_bases.index('SOL'))
 params = dict(base=base)
 precomputed = st.checkbox("Demo Dataset", value=True)
 cols = st.columns(2)
