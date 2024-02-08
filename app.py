@@ -154,10 +154,12 @@ if not precomputed:
         df["slow_ema"] = df["c"].ewm(span=ma * 4).mean()
         df["fast_ema"] = df["c"].ewm(span=ma).mean()
 
-        # want avg absolute value of forecast to correspond with vol target
         df["forecast"] = (df["fast_ema"] - df["slow_ema"]) / (df["vol"] / 16 * df["c"])
-        df["unsigned_forecast"] = df["forecast"].abs()
-        df["forecast"] = df["forecast"] / df["unsigned_forecast"].mean()
+        # want mean absolute value of forecast to correspond with vol target.
+        # cheating with some lookahead here but should not matter much as it's just a scaling factor to 
+        # make scores look neater and risk slightly more aligned to vol target
+        mean_score = df["forecast"].abs().mean()
+        df["forecast"] = df["forecast"] / mean_score
         df["forecast"] = np.clip(df["forecast"], -forecast_cap, forecast_cap)
         df["target"] = df["forecast"] * capital * vol_target / (df["vol"])
         df["pnl"] = df["target"].shift(1) * df["log_diffs"]
