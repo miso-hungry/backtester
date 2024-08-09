@@ -22,23 +22,8 @@ avail_symbols = sorted([x.split('_')[3] for x in avail_symbols])
 # avail_symbols
 
 symbols = st.multiselect('Symbol', options=avail_symbols, default=['SOLUSDT'])
-cols = st.columns(2)
 avail_datasets = ["2021-01-01_2024-08-01"]
-dataset = cols[0].selectbox('Dataset', options=avail_datasets)
-
-cols = st.columns(2)
-now_time = datetime2.now(tz=time_zone)
-start_time = now_time - datetime.timedelta(days=30 * 3)
-
-start_date = cols[0].date_input(
-    "Start Date", value=start_time.date()
-)
-end_date = cols[1].date_input(
-    "End Date", value=now_time.date()
-)
-
-start_time = time_zone.localize(datetime2.combine(start_date, datetime.time()))
-end_time = time_zone.localize(datetime2.combine(end_date, datetime.time()))
+dataset = st.selectbox('Dataset', options=avail_datasets)
 
 cols = st.columns(6)
 capital = cols[0].number_input("Capital", min_value=0, step=50_000, value=100_000)
@@ -164,10 +149,6 @@ fig.add_trace(
 for ma in simulations:
     df = cross[cross['simulation'] == ma]
     fig.add_trace(go.Scatter(x=df["time"], y=df["cum_returns"], name=f"cum_returns{ma}"), row=4, col=1)
-
-# for ma in simulations:
-#     df = cache[ma]
-#     fig.add_trace(go.Scatter(x=df["time"], y=df["cum_fees"], name=f"fees{ma}"), row=5, col=1)
 
 fig.update_layout(xaxis_rangeslider_visible=False, height=4 * 400)
 st.plotly_chart(fig, use_container_width=True)
