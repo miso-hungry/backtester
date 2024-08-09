@@ -46,7 +46,7 @@ vol_target = cols[1].number_input("Vol Target", min_value=0.0, step=0.1, value=0
 simulations = (1, 2, 4, 8, 16, 32, 64)
 display_forecast = cols[2].selectbox("Display Forecast", options=simulations, index=simulations.index(4))
 forecast_cap = cols[3].number_input("Forecast Cap", min_value=0, value=2)
-fee_bps = cols[4].number_input("Fee (bps)", min_value=0.0, step=0.5, value=2.0)
+fee_bps = cols[4].number_input("Fee (bps)", min_value=0.0, step=0.5, value=3.0)
 candle_len = cols[5].selectbox("Candle Length", ["1d", "1h"])
 
 buf = []
@@ -80,8 +80,9 @@ for ma in simulations:
     mean_score = df["forecast"].abs().mean()
     df["forecast_norm"] = np.clip(df["forecast"] / mean_score, -forecast_cap, forecast_cap) / forecast_cap
     df["returns"] = df.groupby('symbol')["forecast_norm"].shift(1) * df["log_return"]
+    df['fees'] = df.groupby('symbol')["forecast_norm"].diff().abs() * fee_bps * 1e-4
+    df['returns'] = df['returns'] - df['fees']
     df["cum_returns"] = df.groupby('symbol')["returns"].cumsum()
-    # df["cum_fees"] = df.
     df['simulation'] = ma
     buf.append(df)
 
