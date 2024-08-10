@@ -21,7 +21,7 @@ avail_symbols = glob.glob('demo_data/*')
 avail_symbols = sorted([x.split('_')[3] for x in avail_symbols])
 # avail_symbols
 
-symbols = st.multiselect('Symbol', options=avail_symbols, default=['SOLUSDT'])
+symbols = st.multiselect('Symbol', options=avail_symbols, default=['BTCUSDT', 'ETHUSDT', 'SOLUSDT'])
 avail_datasets = ["2021-01-01_2024-08-01"]
 dataset = st.selectbox('Dataset', options=avail_datasets)
 
